@@ -1,0 +1,131 @@
+﻿USE QuanLyQuanCafe;
+GO
+
+
+-- XÓA BẢNG CŨ
+DROP TABLE IF EXISTS ChiTietPhieuNhap;
+DROP TABLE IF EXISTS PhieuNhap;
+DROP TABLE IF EXISTS ChiTietHoaDon;
+DROP TABLE IF EXISTS HoaDon;
+DROP TABLE IF EXISTS ChiTietKho;
+DROP TABLE IF EXISTS NguyenLieu;
+DROP TABLE IF EXISTS Kho;
+DROP TABLE IF EXISTS Mon;
+DROP TABLE IF EXISTS Ban;
+DROP TABLE IF EXISTS NhanVien;
+DROP TABLE IF EXISTS KhuVuc;
+GO
+
+-- KHU VỰC
+CREATE TABLE KhuVuc (
+    MaKV VARCHAR(10) PRIMARY KEY,
+    TenKV NVARCHAR(100) NOT NULL,
+    DiaChi NVARCHAR(200),
+    MaQuanLy VARCHAR(10)
+);
+
+-- NHÂN VIÊN
+CREATE TABLE NhanVien (
+    MaNV VARCHAR(10) PRIMARY KEY,
+    TenNV NVARCHAR(100) NOT NULL,
+    SDT VARCHAR(15) UNIQUE,
+    DiaChi NVARCHAR(200),
+    ChucVu NVARCHAR(50) CHECK (ChucVu IN (N'Nhân viên', N'Quản lý')),
+    MaKV VARCHAR(10),
+	TenDangNhap VARCHAR(50) UNIQUE,
+	MatKhau VARCHAR(100),
+    FOREIGN KEY (MaKV) REFERENCES KhuVuc(MaKV)
+);
+		
+-- BÀN
+CREATE TABLE Ban (
+    MaBan VARCHAR(10) PRIMARY KEY,
+    LoaiBan NVARCHAR(50),
+    TrangThai NVARCHAR(20) 
+        CHECK (TrangThai IN (N'Trống',N'Đầy',N'Đã đặt')) DEFAULT N'Trống',
+    MaKV VARCHAR(10),
+    FOREIGN KEY (MaKV) REFERENCES KhuVuc(MaKV)
+);
+
+-- MÓN
+CREATE TABLE Mon (
+    MaMon VARCHAR(10) PRIMARY KEY,
+    TenMon NVARCHAR(100) NOT NULL,
+    DonGia DECIMAL(10,2) CHECK (DonGia > 0),
+    TrangThai NVARCHAR(50) CHECK (TrangThai IN (N'Còn bán', N'Hết món')) DEFAULT N'Còn bán'
+);
+
+-- KHO
+CREATE TABLE Kho (
+    MaKho VARCHAR(10) PRIMARY KEY,
+    TenKho NVARCHAR(100),
+    TrangThai NVARCHAR(50),
+    NgayTao DATE DEFAULT GETDATE()
+);
+
+-- NGUYÊN LIỆU
+CREATE TABLE NguyenLieu (
+    MaNL VARCHAR(10) PRIMARY KEY,
+    TenNL NVARCHAR(100),
+    Gia DECIMAL(10,2) CHECK (Gia >= 0),
+);
+
+-- CHI TIẾT KHO
+CREATE TABLE ChiTietKho (
+    MaCTKho VARCHAR(10) PRIMARY KEY,
+    MaKho VARCHAR(10),
+    MaNL VARCHAR(10),
+    SoLuongTon INT CHECK (SoLuongTon >= 0),
+    UNIQUE (MaKho, MaNL),
+    FOREIGN KEY (MaKho) REFERENCES Kho(MaKho),
+    FOREIGN KEY (MaNL) REFERENCES NguyenLieu(MaNL)
+);
+
+-- HÓA ĐƠN
+CREATE TABLE HoaDon (
+    MaHD VARCHAR(10) PRIMARY KEY,
+    MaNV VARCHAR(10),
+    MaBan VARCHAR(10),
+    NgayTao DATETIME DEFAULT GETDATE(),
+    TrangThai NVARCHAR(50) 
+        CHECK (TrangThai IN (N'Chưa thanh toán', N'Đã thanh toán')),
+    FOREIGN KEY (MaNV) REFERENCES NhanVien(MaNV),
+    FOREIGN KEY (MaBan) REFERENCES Ban(MaBan)
+);
+
+-- CHI TIẾT HÓA ĐƠN
+CREATE TABLE ChiTietHoaDon (
+    MaCTHD VARCHAR(20) PRIMARY KEY,
+    MaHD VARCHAR(10),
+    MaMon VARCHAR(10),
+    SoLuong INT CHECK (SoLuong > 0),
+    DonGia DECIMAL(10,2),
+    ThanhTien AS (SoLuong * DonGia),
+    FOREIGN KEY (MaHD) REFERENCES HoaDon(MaHD),
+    FOREIGN KEY (MaMon) REFERENCES Mon(MaMon)
+);
+
+-- PHIẾU NHẬP
+CREATE TABLE PhieuNhap (
+    MaPN VARCHAR(10) PRIMARY KEY,
+    MaNV VARCHAR(10) NOT NULL,
+    NgayTao DATETIME DEFAULT GETDATE(),
+    GhiChu NVARCHAR(200),
+    TongTien DECIMAL(18,2) DEFAULT 0 CHECK (TongTien >= 0),
+
+    CONSTRAINT FK_PhieuNhap_NhanVien
+    FOREIGN KEY (MaNV)
+    REFERENCES NhanVien(MaNV)
+);
+
+-- CHI TIẾT PHIẾU NHẬP
+CREATE TABLE ChiTietPhieuNhap (
+    MaCTPN VARCHAR(10) PRIMARY KEY,
+    MaPN VARCHAR(10),
+    MaNL VARCHAR(10),
+    SoLuong INT CHECK (SoLuong > 0),
+    GiaNhap DECIMAL(10,2),
+    FOREIGN KEY (MaPN) REFERENCES PhieuNhap(MaPN),
+    FOREIGN KEY (MaNL) REFERENCES NguyenLieu(MaNL)
+);
+GO
